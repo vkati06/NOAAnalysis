@@ -1,0 +1,23 @@
+Package: NOAAnalysis
+Title: Visualize the Earthquakes in Time and Space
+Version: 0.0.0.9000
+Authors@R: person("Katalin", "Virag", email = "virag.katalin.11@gmail.com", role = c("aut", "cre"))
+Description: Collection of functions for analysing NOAA Significant Earthquake Database from the web page https: //www.ngdc.noaa.gov/nndc/struts/form?t=101650&s=1&d=1.
+Depends: R (>= 3.4.2)
+License: GPL-3 + file LICENSE
+Encoding: UTF-8
+LazyData: true
+Imports: magrittr,
+    readr,
+    dplyr,
+    tidyr,
+    stringr,
+    ggplot2,
+    grid,
+    chron,
+    leaflet
+RoxygenNote: 6.0.1
+Suggests: testthat,
+    knitr,
+    rmarkdown
+VignetteBuilder: knitr
