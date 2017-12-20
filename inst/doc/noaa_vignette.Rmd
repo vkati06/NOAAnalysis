@@ -1,0 +1,121 @@
+---
+title: "NOAAnalysis"
+author: "Katalin Virag"
+date: "`r Sys.Date()`"
+output: rmarkdown::html_vignette
+vignette: >
+  %\VignetteIndexEntry{NOAAnalysis}
+  %\VignetteEngine{knitr::rmarkdown}
+  \usepackage[utf8]{inputenc}
+---
+
+```{r setup, echo = FALSE, message = FALSE}
+library(NOAAnalysis)
+library(magrittr)
+library(chron)
+g <- system.file("extdata", package = "NOAAnalysis")
+knitr::opts_knit$set(root.dir = g)
+```
+
+These functions can be used to work with the NOAA Significant Earthquakes dataset from [link](https://www.ngdc.noaa.gov/nndc/struts/form?t=101650&s=1&d=1).
+
+## Functions included in the package
+
+* `eq_clean_data()` to clean data
+* `eq_location_clean()` to clean the `LOCATION_NAME` column of the NOAA data
+* `geom_timeline()` to visualize the times at which earthquakes occur
+* `geom_timeline_label()` to add annotation to the timeline plot of earthquakes
+* `theme_timeline` to add simple theme to the timeline plot of earthquakes
+* `eq_map()` to visualize the earthquakes in space
+* `eq_create_label()` to create an HTML label to annotate the leaflet map
+
+## Data
+
+This package includes one dataset called `signif.txt` which contains information on destructive earthquakes (see [link](https://www.ngdc.noaa.gov/nndc/struts/form?t=101650&s=1&d=1)).
+
+## Data cleaning functions
+
+### Clean the NOAA Significant Earthquake Database with `eq_clean_data()`
+
+This function takes raw NOAA data frame and returns a clean data frame with the following features:
+
+* A `DATE` column created by uniting the year, month, day and converting it to the `Date` class
+
+* `LATITUDE` and `LONGITUDE` columns converted to `numeric` class
+
+* `LOCATION_NAME_cleaned` column from `LOCATION_NAME` by stripping out the country name and in title case
+
+```{r message = FALSE}
+noaa <- readr::read_delim(system.file("extdata", "signif.txt",
+        package = "NOAAnalysis"), delim = "\t") %>% eq_clean_data()
+head(noaa)
+summary(noaa)
+```
+
+### Clean the LOCATION_NAME string with `eq_location_clean()`
+
+This helper function cleans the `LOCATION_NAME` string by stripping out the country name and converts names to title case
+
+```{r}
+eq_location_clean("SYRIA: UGARIT")
+```
+
+## Visualization tools
+
+### Visualize the earthquakes in time with `geom_timeline()` and apply simple theme with `theme_timeline`
+
+The `geom_timeline()` function creates a `ggplot` object which shows the times at which earthquakes occur ranging from `xmin` to `xmax` dates with a point for each earthquake. The `x` aesthetic is a date and an optional `y` aesthetic is a factor indicating some stratification (e.g. country). Additionally, the magnitudes and the number of deaths associated with each earthquake can be shown.
+
+The `theme_timeline` creates simple theme for the timeline plot.
+
+```{r message = FALSE, fig.height = 4, fig.width = 6, fig.align = "center"}
+readr::read_delim(system.file("extdata", "signif.txt",
+       package = "NOAAnalysis"), delim = "\t") %>%
+eq_clean_data() %>%
+dplyr::filter(COUNTRY == "USA" & YEAR >= 2000) %>%
+ggplot2::ggplot(ggplot2::aes(x = DATE, y = COUNTRY,
+         xmin = as.Date("2000-01-01"), xmax = as.Date("2016-01-01"),
+         size = as.numeric(EQ_PRIMARY), color = as.numeric(TOTAL_DEATHS))) +
+geom_timeline() +
+theme_timeline +
+ggplot2::labs(colour = "# deaths", size = "Richter scale value")
+```
+
+Annotations can be added to the timeline plot with the `geom_timeline_label()` function. There is an option to subset to `n_max` number of earthquakes, where we take the `n_max` largest (by magnitude) earthquakes.
+
+```{r message = FALSE, fig.height = 4, fig.width = 6, fig.align = "center"}
+readr::read_delim(system.file("extdata", "signif.txt",
+       package = "NOAAnalysis"), delim = "\t") %>%
+eq_clean_data() %>%
+dplyr::filter(COUNTRY %in% c("USA", "CHINA") & YEAR >= 2000) %>%
+ggplot2::ggplot(ggplot2::aes(x = DATE, y = COUNTRY,
+                xmin = as.Date("2000-01-01"), xmax = as.Date("2016-01-01"),
+                size = as.numeric(EQ_PRIMARY), color = as.numeric(TOTAL_DEATHS))) +
+geom_timeline() +
+geom_timeline_label(ggplot2::aes(label = LOCATION_NAME_cleaned)) +
+theme_timeline +
+ggplot2::labs(colour = "# deaths", size = "Richter scale value")
+```
+
+### Visualize the earthquakes in space with `eq_map()`
+
+`eq_map()` creates a `leaflet` object which maps and annotates the epicenters. Each earthquake is shown with a circle, and the radius of the circle is proportional to the earthquake's magnitude. Each point is annotated in pop up window containing annotation data stored in the `annot_col` column of data.
+
+```{r message = FALSE, fig.height = 4, fig.width = 6, fig.align = "center"}
+readr::read_delim(system.file("extdata", "signif.txt",
+       package = "NOAAnalysis"), delim = "\t") %>%
+eq_clean_data() %>%
+dplyr::filter(COUNTRY == "MEXICO" & YEAR >= 2000) %>%
+eq_map(annot_col = "DATE")
+```
+
+More annotation can be added to the `leaflet` map with the `eq_create_label()` function. This function puts together a character string for each earthquake that showes the cleaned location, the magnitude, and the total number of deaths (if not missing).
+
+```{r message = FALSE, fig.height = 4, fig.width = 6, fig.align = "center"}
+readr::read_delim(system.file("extdata", "signif.txt",
+       package = "NOAAnalysis"), delim = "\t") %>%
+eq_clean_data() %>%
+dplyr::filter(COUNTRY == "MEXICO" & YEAR >= 2000) %>%
+dplyr::mutate(popup_text = eq_create_label(.)) %>%
+eq_map(annot_col = "popup_text")
+```
