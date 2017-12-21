@@ -1,5 +1,7 @@
 # NOAAnalysis
 
+https://travis-ci.org/vkati06/NOAAnalysis.svg?branch=master
+
 The NOAAnalysis package can be used to work with the NOAA Significant 
 Earthquakes dataset from [link](https://www.ngdc.noaa.gov/nndc/struts/form?t=101650&s=1&d=1)
 
